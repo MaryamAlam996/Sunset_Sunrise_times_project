@@ -1,2 +1,3 @@
 # Sunset_Sunrise_times_project
-Short project using a free API
+Short project using the Sunset and sunrise times API:
+https://sunrise-sunset.org
