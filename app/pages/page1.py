@@ -1,0 +1,128 @@
+import streamlit as st
+import pandas  as pd
+import plotly.express as px
+from datetime import datetime
+
+color_continuous_scale=[
+    [0.0, "#330988"],    # 00:00
+    [0.25, "#91e0ff"],   # 06:00
+    [0.5, "#ffff00"],    # 12:00
+    [0.75, "#ff0099"],   # 18:00
+    [1.0, "#330988"]     # 24:00
+]
+color_continuous_scale_2=[
+    [0.0, "#00EEFF"],
+    [1.0, "#F700FF"]     # 24:00
+]
+
+def convert_to_seconds(series):
+    return series.apply(lambda x: _time_str_to_seconds(x))
+
+def _time_str_to_seconds(time_str):
+    dt = datetime.strptime(time_str, "%I:%M:%S %p")
+    seconds = dt.hour * 3600 + dt.minute * 60 + dt.second
+    # st.write(f"Converted {time_str} to {seconds} seconds")
+    return seconds
+
+def times_to_int(df):
+    # st.dataframe(df)
+    # show df types
+    # st.write(df.dtypes)
+    # show first row's sunrise times
+    # sunrise = df.iloc[0][["Sunrise"]]
+    # st.write(sunrise)
+    df['Sunrise_seconds'] = convert_to_seconds(df['Sunrise'])
+    df['Sunset_seconds'] = convert_to_seconds(df['Sunset'])
+    df['Day_length_seconds'] = df['Sunset_seconds'] - df['Sunrise_seconds']
+    # convert to positive numbers
+    df['Day_length_seconds'] = df['Day_length_seconds'].abs()
+    return df
+
+def sunrise_map(df):
+    fig = px.scatter_mapbox(
+        df,
+        lat="LAT",
+        lon="LON",
+        color="Sunrise_seconds",
+        zoom=1,
+        height=600,
+        mapbox_style="carto-positron",
+        color_continuous_scale=color_continuous_scale,
+        range_color=(0, 86400),
+            hover_name="Country",
+        hover_data={"Sunrise_seconds": False, "Sunrise": True}
+    )
+    # display the map
+    st.title(f"Sunrise Times for {selected_date}")
+    st.plotly_chart(fig, use_container_width=True)
+
+def sunset_map(df):
+    fig2 = px.scatter_mapbox(
+        df,
+        lat="LAT",
+        lon="LON",
+        color="Sunset_seconds",
+        zoom=1,
+        height=600,
+        mapbox_style="carto-positron",
+        color_continuous_scale=color_continuous_scale,
+        range_color=(0, 86400),
+            hover_name="Country",
+        hover_data={"Sunset_seconds": False, "Sunset": True}
+    )
+    # display the map
+    st.title(f"Sunset Times for {selected_date}")
+    st.plotly_chart(fig2, use_container_width=True)
+
+def day_length_map(df):
+    fig3 = px.scatter_mapbox(
+        df,
+        lat="LAT",
+        lon="LON",
+        color="Day_length_seconds",
+        zoom=1,
+        height=600,
+        mapbox_style="carto-positron",
+        color_continuous_scale=color_continuous_scale_2,
+        range_color=(0, 86400),
+            hover_name="Country",
+        hover_data={"Day_length_seconds": False, "Day_length": True}
+    )
+    # display the map
+    st.title(f"Day lengths for {selected_date}")
+    st.plotly_chart(fig3, use_container_width=True)
+
+# load data
+df = pd.read_csv('../data/sunrise_sunset_data_2.csv')
+# rename columns
+df.rename(columns={"Latitude": "LAT", "Longitude": "LON"}, inplace=True)
+# remove null values
+df.dropna(inplace=True)
+# st.dataframe(df)
+# create a map
+# st.map(df)
+times_to_int(df)
+
+# choose date to display
+st.write("Choose a date to display information for")
+# selecect a date from df
+selected_date = st.selectbox(
+    "Select a date",
+    df['Date'].unique()
+)
+# filter df by selected date
+df = df[df['Date'] == selected_date]
+
+selected_option = st.selectbox(
+    "Select a map to display",
+    ["Sunrise", "Sunset", "Day Length"]
+)
+
+if selected_option == "Sunrise":
+    sunrise_map(df)
+elif selected_option == "Sunset":
+    sunset_map(df)
+else:
+    day_length_map(df)
+
+st.dataframe(df)
