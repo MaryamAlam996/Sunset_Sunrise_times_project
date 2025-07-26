@@ -1,5 +1,6 @@
 import streamlit as st
-
+from World_map import world_map
+from World_map import country_map
 
 # Start Streamlit app
 def main():
@@ -9,14 +10,9 @@ def main():
         layout="wide"
     )
 
-    st.markdown('<br><br><br><br><br><br><br>',
-                unsafe_allow_html=True)
-    st.markdown(
-        '<h1 style="font-size: 100px; text-align: center; color: #FFFFFF;">'
-        'Hello</h1>',
-        unsafe_allow_html=True
-    )
-
 
 if __name__ == "__main__":
     main()
+    # wm.run_app()  # Call the run_app function from World_map.py
+    world_map() 
+    country_map() 

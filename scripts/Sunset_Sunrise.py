@@ -21,7 +21,7 @@ def get_country_data():
 # a given latitude, longitude, and date
 def get_sunrise_sunset(lat, lng, date):
     url = f"https://api.sunrise-sunset.org/json?lat={lat}&lng={lng}&date={date}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     
     if response.status_code == 200:
         data = response.json()
@@ -80,10 +80,11 @@ def Find_sunset_sunrise_info():
 # Function to create a CSV file with the sunset and sunrise data
 def create_sunset_sunrise_csv():
     Coord_df = Find_sunset_sunrise_info()
-    Coord_df.to_csv('Data/sunrise_sunset_data_2.csv', index=False)
-    print("Data saved to sunrise_sunset_data_2.csv")
+    Coord_df.to_csv('Data/sunrise_sunset_data_3.csv', index=False)
+    print("Data saved to sunrise_sunset_data_3.csv")
 
 # Example()
 
 create_sunset_sunrise_csv()
+
 
