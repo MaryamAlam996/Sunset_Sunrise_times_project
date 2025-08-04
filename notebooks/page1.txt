@@ -3,26 +3,30 @@ import pandas  as pd
 import plotly.express as px
 from datetime import datetime
 
-color_continuous_scale=[
+color_continuous_scale = [
     [0.0, "#330988"],    # 00:00
     [0.25, "#91e0ff"],   # 06:00
     [0.5, "#ffff00"],    # 12:00
     [0.75, "#ff0099"],   # 18:00
     [1.0, "#330988"]     # 24:00
 ]
-color_continuous_scale_2=[
+color_continuous_scale_2 = [
     [0.0, "#00EEFF"],
     [1.0, "#F700FF"]     # 24:00
 ]
 
+
+# Function to convert all time strings in a series to seconds
 def convert_to_seconds(series):
     return series.apply(lambda x: _time_str_to_seconds(x))
 
+
+# Function to convert a single time string to seconds
 def _time_str_to_seconds(time_str):
     dt = datetime.strptime(time_str, "%I:%M:%S %p")
     seconds = dt.hour * 3600 + dt.minute * 60 + dt.second
-    # st.write(f"Converted {time_str} to {seconds} seconds")
     return seconds
+
 
 def times_to_int(df):
     # st.dataframe(df)

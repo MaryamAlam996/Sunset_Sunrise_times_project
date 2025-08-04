@@ -20,9 +20,12 @@ def get_country_data():
 # Function to get sunrise and sunset times for
 # a given latitude, longitude, and date
 def get_sunrise_sunset(lat, lng, date):
-    url = f"https://api.sunrise-sunset.org/json?lat={lat}&lng={lng}&date={date}"
+    url = (
+        f"https://api.sunrise-sunset.org/json"
+        f"?lat={lat}&lng={lng}&date={date}"
+    )
     response = requests.get(url, timeout=10)
-    
+
     if response.status_code == 200:
         data = response.json()
         return data['results']
@@ -49,18 +52,24 @@ def Find_sunset_sunrise_info():
     df = get_country_data()
     df = df.reset_index(drop=True)
     # empty new df
-    Coord_df = pd.DataFrame(columns=['Country', 'Date', 'Latitude', 'Longitude', 'Sunrise', 'Sunset','Day_length'])
+    Coord_df = pd.DataFrame(
+        columns=[
+            'Country', 'Date', 'Latitude', 'Longitude',
+            'Sunrise', 'Sunset', 'Day_length'
+        ]
+    )
     Coord_list = []
     i = -1
+    print("Processing countries for sunrise and sunset data...")
     for index, row in df.iterrows():
         time.sleep(1)
-        # print(row['Country'], row['Latitude'], row['Longitude'])
-        # Coord_list.append([row['Latitude'],row['Longitude']])
-        
         for month in range(1, 13):
             i = i + 1
-            print(month)
-            sunrise_sunset = get_sunrise_sunset(row['Latitude'], row['Longitude'], f'2024-{month:02d}-01')
+            sunrise_sunset = get_sunrise_sunset(
+                row['Latitude'],
+                row['Longitude'],
+                f'2024-{month:02d}-01'
+            )
             if sunrise_sunset:
                 Coord_list.append({
                     'Country': row['Country'],
@@ -71,8 +80,7 @@ def Find_sunset_sunrise_info():
                     'Sunset': sunrise_sunset['sunset'],
                     'Day_length': sunrise_sunset['day_length']
                 })
-                print(Coord_list[i])
-
+        print(f"Processed {index + 1} countries")
     Coord_df = pd.DataFrame(Coord_list)
     return Coord_df
 
@@ -80,11 +88,13 @@ def Find_sunset_sunrise_info():
 # Function to create a CSV file with the sunset and sunrise data
 def create_sunset_sunrise_csv():
     Coord_df = Find_sunset_sunrise_info()
-    Coord_df.to_csv('Data/sunrise_sunset_data_3.csv', index=False)
-    print("Data saved to sunrise_sunset_data_3.csv")
+    print("Saving data to CSV file...")
+    if TEST_MODE:
+        Coord_df.to_csv('Data/sunrise_sunset_data_test.csv', index=False)
+        print("Data saved to sunrise_sunset_data_test.csv")
+    else:
+        Coord_df.to_csv('Data/sunrise_sunset_data_2.csv', index=False)
+        print("Data saved to sunrise_sunset_data_2.csv")
 
-# Example()
 
 create_sunset_sunrise_csv()
-
-
