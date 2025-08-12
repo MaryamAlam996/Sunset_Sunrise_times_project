@@ -21,19 +21,38 @@ color_continuous_scale_2 = [
 # a given latitude, longitude, and date
 # using the API from https://sunrise-sunset.org/api
 def get_sunrise_sunset(lat, lng, date):
-    # Construct the URL for the API request
     url = (
-        f"https://api.sunrise-sunset.org/json?"
-        f"lat={lat}&lng={lng}&date={date}"
+        f"https://api.sunrise-sunset.org/json"
+        f"?lat={lat}&lng={lng}&date={date}"
     )
-    # Make the API request
-    response = requests.get(url, timeout=10)
-    # Check if the request was successful
-    if response.status_code == 200:
-        data = response.json()
-        return data['results']
-    else:
-        return None
+    # response = requests.get(url, timeout=10)
+
+    # if response.status_code == 200:
+    #     data = response.json()
+    #     return data['results']
+    # else:
+    #     return None
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            # print(data)
+            # print(isinstance(data, dict))
+            if isinstance(data, dict):
+                return(data['results'] )
+            else:
+                raise ValueError("Unexpected data format received from API.")
+        else:
+            # error handling for non-200 status codes
+            raise requests.exceptions.RequestException(
+                f"Error fetching data: {response.status_code}"
+            )
+    except requests.exceptions.Timeout:
+        print(f"Error: Request to {url} timed out.")
+    except Exception as e:
+        print(f"An unknown error occurred: {e}")
+        raise
+    return None
 
 
 # Function to convert time strings in series to seconds
@@ -48,6 +67,21 @@ def _time_str_to_seconds(time_str):
     # Calculate the total seconds from the datetime object
     seconds = dt.hour * 3600 + dt.minute * 60 + dt.second
     return seconds
+
+
+def _time_str_to_seconds(time_str):
+    if not isinstance(time_str, str):
+        raise TypeError(f"Expected a string for time_str, got {type(time_str).__name__} instead.")
+    
+    formats = ("%I:%M:%S %p", "%H:%M:%S")
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(time_str, fmt)
+            return dt.hour * 3600 + dt.minute * 60 + dt.second
+        except ValueError:
+            pass
+
+    raise ValueError(f"Invalid time string: {time_str}")
 
 
 # Function to convert sunrise, sunset, and day length times to seconds
@@ -178,11 +212,16 @@ def country_map():
         max_value=pd.to_datetime("2024-12-31")
     )
     # filter df by selected country
-    df_country = df[df['Country'] == selected_country]
+    df_country = df[df['Country'] == selected_country].copy()
+    # get sunrise and sunset times for the selected country and date
+    # Extract single latitude and longitude values from the filtered DataFrame
+    lat = df_country.iloc[0]["LAT"]
+    lon = df_country.iloc[0]["LON"]
+
     # get sunrise and sunset times for the selected country and date
     sunrise_sunset = get_sunrise_sunset(
-        df_country["LAT"],
-        df_country["LON"],
+        lat,
+        lon,
         selected_date
     )
 

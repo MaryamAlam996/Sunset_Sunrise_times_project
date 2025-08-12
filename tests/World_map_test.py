@@ -7,27 +7,19 @@ import requests
 from unittest.mock import patch
 from requests.exceptions import Timeout, RequestException
 import pandas as pd
+import plotly.express as px
 
-import runpy
+from app.World_map import get_sunrise_sunset
+from app.World_map import convert_to_seconds
+from app.World_map import _time_str_to_seconds
+from app.World_map import times_to_int
+from app.World_map import sunrise_map
+from app.World_map import sunset_map
+from app.World_map import day_length_map
+from app.World_map import  world_map
+from app.World_map import country_map
 
-from scripts.Sunset_Sunrise import get_country_data
-from scripts.Sunset_Sunrise import get_sunrise_sunset
-from scripts.Sunset_Sunrise import load_df
-from scripts.Sunset_Sunrise import create_sunset_sunrise_csv
-from scripts.Sunset_Sunrise import Find_sunset_sunrise_info
 
-
-# testing the get_country_data function
-def test_get_country_data():
-    # Arrange
-    test_df = df = pd.DataFrame(columns=['Country','Latitude','Longitude','D','E','F','G'])
-    expected_columns = ['Country', 'Latitude', 'Longitude']
-    expected_df = pd.DataFrame(columns=expected_columns)
-    # Act
-    actual_df = get_country_data(test_df)
-    # Assert
-    #  check is dataframes have same number of columns
-    assert len(actual_df.columns) == len(expected_columns)
 
 # testing the get_sunrise_sunset function for successful response
 @patch('scripts.Sunset_Sunrise.requests.get')
@@ -141,109 +133,67 @@ def test_get_sunrise_sunset_response_not_dict(mock_get):
     # Act
     with pytest.raises(ValueError):
         get_sunrise_sunset(0, 0, "2024-01-01")
-
-# def Example():
-
-@patch('scripts.Sunset_Sunrise.pd.read_csv')
-@patch('scripts.Sunset_Sunrise.get_country_data')
-def test_load_df(mock_country_data, mock_read_csv):
-    # Arrange
-    mock_data = pd.DataFrame({
-        'Country': ['Country1', 'Country2'],
-        'Latitude': [10.0, 20.0],
-        'Longitude': [30.0, 40.0],
-    })
-    mock_read_csv.return_value = mock_data
-    mock_country_data.return_value = mock_data
-    # action
-    result_df = load_df()
-    # Assert
-    assert isinstance(result_df, pd.DataFrame)
+        
+#  testing to see if the lambda function is returning the correct series
+@patch('app.World_map._time_str_to_seconds')     
+def test_convert_to_seconds(mock_function):
+    mock_list = [2, 2]
+    mock_series = pd.Series(mock_list)
+    mock_function.return_value = 1
+    exp_list = [1,1]
+    exp_series = pd.Series(exp_list)
     
+    act_series = convert_to_seconds(mock_series)
+    pd.testing.assert_series_equal(act_series, exp_series)
 
-# @patch('scripts.Sunset_Sunrise.load_df')
-# def test_Find_sunset_sunrise_info(mock_load_df):
-#     mock_df = 
-#     mock_load_df.return_value = mock_df
+#  "sunrise":"7:27:02 AM",
+# "sunset":"5:05:55 PM",
+# "solar_noon":"12:16:28 PM",
+# "day_length":"9:38:53",
+
+@pytest.mark.parametrize("time_string, expected_seconds", [
+    ("7:27:02 AM", 26822),   # 7*3600 + 27*60 + 2
+    ("5:05:55 PM", 61555),   # 17*3600 + 5*60 + 55
+    ("09:38:53", 34733)      # 9*3600 + 38*60 + 53
+])
+def test_time_str_to_seconds(time_string, expected_seconds):
+    actual_output = _time_str_to_seconds(time_string)
+    assert actual_output == expected_seconds
     
-@patch('scripts.Sunset_Sunrise.load_df') 
-@patch('scripts.Sunset_Sunrise.get_sunrise_sunset')    
-def test_Find_sunset_sunrise_info(mock_get_sun, mock_load_df):
-    mock_df = pd.DataFrame({
-        "Country": ["A"],
-        "Latitude": [10.0],
-        "Longitude": [20.0]
-    })
+# error handling
+def test_time_str_to_seconds_error():
+    time_string = "Hello" # any invalid value but correct data type
+    with pytest.raises(ValueError):
+        _time_str_to_seconds(time_string)
+        
+def test_time_str_to_seconds_error():
+    time_string = 0 # data type
+    with pytest.raises(TypeError):
+        _time_str_to_seconds(time_string)
+   
+   
+def side_effect_func(x):
+    return x*10
 
-    # Mock sunrise/sunset API response
-    mock_sun_data = {
-        "sunrise": "06:00:00",
-        "sunset": "18:00:00",
-        "day_length": "12:00:00"
+@patch("app.World_map.convert_to_seconds", side_effect=side_effect_func)
+def test_times_to_int(mock_convert):
+    data = {
+        "Sunrise": [100, 200, 100],
+        "Sunset": [100, 100, 200],
     }
+    df = pd.DataFrame(data)
 
-    mock_load_df.return_value = mock_df
-    mock_get_sun.return_value = mock_sun_data
-    # Act
-    result_df = Find_sunset_sunrise_info()
+    data_expected = {
+        "Sunrise": [100, 200, 100],
+        "Sunset": [100, 100, 200],
+        "Sunrise_seconds": [1000, 2000, 1000],
+        "Sunset_seconds": [1000, 1000, 2000],
+        "Day_length_seconds": [0, 1000, 1000]
+    }
+    exp_df = pd.DataFrame(data_expected)
 
-    # type check
-    assert isinstance(result_df, pd.DataFrame)
+    actual_df = times_to_int(df)
+    pd.testing.assert_frame_equal(actual_df, exp_df)
     
-    # expected number of rows 
-    assert len(result_df) == 12
     
-    # correct columns
-    expected_cols = ['Country', 'Date', 'Latitude', 'Longitude', 'Sunrise', 'Sunset', 'Day_length']
-    assert list(result_df.columns) == expected_cols
-
-# for none returned by API
-@patch('scripts.Sunset_Sunrise.load_df') 
-@patch('scripts.Sunset_Sunrise.get_sunrise_sunset')    
-def test_Find_sunset_sunrise_info_none(mock_get_sun, mock_load_df):
-    mock_df = pd.DataFrame({
-        "Country": ["A"],
-        "Latitude": [10.0],
-        "Longitude": [20.0]
-    })
-
-    # Mock sunrise/sunset API response
-    mock_sun_data = None
-
-    mock_load_df.return_value = mock_df
-    mock_get_sun.return_value = mock_sun_data
-    # Act
-    result_df = Find_sunset_sunrise_info()
-
-    # type check
-    assert isinstance(result_df, pd.DataFrame)
-    
-    # expected number of rows 
-    assert len(result_df) == 0
-    
-    # empty df
-    assert result_df.empty
-    
-@patch('scripts.Sunset_Sunrise.Find_sunset_sunrise_info') 
-@patch('scripts.Sunset_Sunrise.pd.DataFrame.to_csv')
-def test_create_sunset_sunrise_csv(mock_to_csv, mock_find_info, capsys):
-    mock_find_info.return_value = Mock()
-    mock_to_csv.return_value = Mock()
-    TEST_MODE = False
-    # act
-    create_sunset_sunrise_csv(TEST_MODE)
-    captured = capsys.readouterr()
-    assert "Data saved to sunrise_sunset_data_2.csv"
-    
-# for test mode
-@patch('scripts.Sunset_Sunrise.Find_sunset_sunrise_info') 
-@patch('scripts.Sunset_Sunrise.pd.DataFrame.to_csv')
-def test_create_sunset_sunrise_csv_test_mode(mock_to_csv, mock_find_info, capsys):
-    mock_find_info.return_value = Mock()
-    mock_to_csv.return_value = Mock()
-    TEST_MODE = True
-    # act
-    create_sunset_sunrise_csv(TEST_MODE)
-    captured = capsys.readouterr()
-    assert "Data saved to sunrise_sunset_data_test.csv"
     

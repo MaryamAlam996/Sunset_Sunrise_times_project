@@ -1,6 +1,11 @@
 import streamlit as st
-from World_map import world_map
-from World_map import country_map
+
+try:
+    from app.World_map import world_map
+    from app.World_map import country_map
+except:
+    from World_map import world_map
+    from World_map import country_map
 
 
 # Start Streamlit app
@@ -12,9 +17,14 @@ def main():
     )
 
 
-if __name__ == "__main__":
+# run all functions
+def run_main():
     # Run the main function to start the Streamlit app
     main()
     # Run the world map and country map functions
     world_map()
     country_map()
+
+
+if __name__ == "__main__":
+    run_main()
