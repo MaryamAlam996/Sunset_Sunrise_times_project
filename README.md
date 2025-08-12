@@ -6,6 +6,7 @@ and the latitude and longitude csv https://www.kaggle.com/datasets/bohnacker/cou
 
 ## Goals of project
 - practice calling an API in python
+- more practice writing tests
 - learn how to display data as a map in streamlit
 
 ## Sunset_Sunrise.py
@@ -15,6 +16,12 @@ Using the csv file a data frame of countries and their latitudes and longitudes 
 Using the csv created, displays a map with points for each country which display information when you hover over them. The information shown can be filtered by what you would like to see (sunset times, sunrise times or the day lengths) as well as the time of year. The points are colour coordinated to easily compare. Underneath this map is another map which displays more specific data for each country. This is done by calling the API after selecting a country and a specific date, then a new map is generated showing the relevant information.
 
 ## Instructions to run
+Setting up venv
+```console
+py -3.11 -m venv .venv
+source .venv/scripts/activate
+pip install -r requirements.txt
+```
 To run the streamlit app
 ```console
 cd app
@@ -23,4 +30,8 @@ streamlit run main.py
 To run the script for gathering data using the API
 ```console
 python scripts/Sunset_Sunrise.py
+```
+To run tests (at root)
+```console
+pytest --cov=app --cov=scripts --cov-report=term-missing
 ```
